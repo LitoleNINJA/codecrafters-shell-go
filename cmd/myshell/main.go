@@ -40,6 +40,8 @@ func handleCommand(cmd string, args []string) {
 
 		if listContains(builtInCommands, args[0]) {
 			fmt.Printf("%s is a shell builtin\n", args[0])
+		} else if path, ok := isOnPath(args[0]); ok {
+			fmt.Printf("%s is %s\n", args[0], path+"/"+args[0])
 		} else {
 			fmt.Printf("%s not found\n", args[0])
 		}
@@ -67,4 +69,17 @@ func listContains(list []string, elem string) bool {
 	}
 
 	return false
+}
+
+func isOnPath(cmd string) (string, bool) {
+	osPath := os.Getenv("PATH")
+	paths := strings.Split(osPath, ":")
+
+	for _, path := range paths {
+		if _, err := os.Stat(path + "/" + cmd); err == nil {
+			return path, true
+		}
+	}
+
+	return "", false
 }
