@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -41,12 +42,13 @@ func handleCommand(cmd string, args []string) {
 		if listContains(builtInCommands, args[0]) {
 			fmt.Printf("%s is a shell builtin\n", args[0])
 		} else if path, ok := isOnPath(args[0]); ok {
-			fmt.Printf("%s is %s\n", args[0], path+"/"+args[0])
+			fullPath := path + "/" + args[0]
+			fmt.Printf("%s is %s\n", args[0], fullPath)
 		} else {
 			fmt.Printf("%s not found\n", args[0])
 		}
 	default:
-		fmt.Printf("%s: command not found\n", cmd)
+		runCommand(cmd, args)
 	}
 }
 
@@ -82,4 +84,15 @@ func isOnPath(cmd string) (string, bool) {
 	}
 
 	return "", false
+}
+
+func runCommand(cmd string, args []string) {
+	command := exec.Command(cmd, args...)
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+
+	err := command.Run()
+	if err != nil {
+		fmt.Println("error running command:", err)
+	}
 }
