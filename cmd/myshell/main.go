@@ -41,7 +41,7 @@ func handleCommand(cmd string, args []string) {
 		if listContains(builtInCommands, args[0]) {
 			fmt.Printf("%s is a shell builtin\n", args[0])
 		} else {
-			fmt.Printf("%s: command not found\n", args[0])
+			fmt.Printf("%s not found\n", args[0])
 		}
 	default:
 		fmt.Printf("%s: command not found\n", cmd)
