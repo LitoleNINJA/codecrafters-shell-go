@@ -11,17 +11,39 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
-		cmd, err := reader.ReadString('\n')
+		userInput, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
+			fmt.Println("error reading input:", err)
+			continue
 		}
 
-		cmd = strings.ReplaceAll(cmd, "\n", "")
-		handleCommand(cmd)
+		userInput = strings.ReplaceAll(userInput, "\n", "")
+		cmd, args := parseInput(userInput)
+		if err != nil {
+			fmt.Println("error parsing input:", err)
+			continue
+		}
+
+		handleCommand(cmd, args)
 	}
 }
 
-func handleCommand(cmd string) {
-	fmt.Printf("%s: command not found\n", cmd)
+func handleCommand(cmd string, args []string) {
+	switch cmd {
+	case "exit":
+		os.Exit(0)
+	default:
+		fmt.Printf("%s: command not found\n", cmd)
+	}
+}
+
+func parseInput(input string) (string, []string) {
+	fields := strings.Fields(input)
+	cmd := fields[0]
+
+	if len(fields) > 1 {
+		return cmd, fields[1:]
+	} else {
+		return cmd, nil
+	}
 }
