@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+var builtInCommands = []string{"exit", "echo", "type"}
+
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
@@ -30,6 +32,17 @@ func handleCommand(cmd string, args []string) {
 		os.Exit(0)
 	case "echo":
 		fmt.Println(strings.Join(args, " "))
+	case "type":
+		if len(args) == 0 {
+			fmt.Println("type: missing argument")
+			return
+		}
+
+		if listContains(builtInCommands, args[0]) {
+			fmt.Printf("%s is a shell builtin\n", args[0])
+		} else {
+			fmt.Printf("%s: command not found\n", args[0])
+		}
 	default:
 		fmt.Printf("%s: command not found\n", cmd)
 	}
@@ -44,4 +57,14 @@ func parseInput(input string) (string, []string) {
 	} else {
 		return cmd, nil
 	}
+}
+
+func listContains(list []string, elem string) bool {
+	for _, e := range list {
+		if e == elem {
+			return true
+		}
+	}
+
+	return false
 }
