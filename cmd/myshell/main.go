@@ -19,10 +19,6 @@ func main() {
 
 		userInput = strings.ReplaceAll(userInput, "\n", "")
 		cmd, args := parseInput(userInput)
-		if err != nil {
-			fmt.Println("error parsing input:", err)
-			continue
-		}
 
 		handleCommand(cmd, args)
 	}
@@ -32,6 +28,8 @@ func handleCommand(cmd string, args []string) {
 	switch cmd {
 	case "exit":
 		os.Exit(0)
+	case "echo":
+		fmt.Println(strings.Join(args, " "))
 	default:
 		fmt.Printf("%s: command not found\n", cmd)
 	}
