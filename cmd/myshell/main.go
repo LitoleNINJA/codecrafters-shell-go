@@ -57,6 +57,11 @@ func handleCommand(cmd string, args []string) {
 		fmt.Println(dir)
 	case "cd":
 		path := args[0]
+
+		if path == "~" {
+			path = os.Getenv("HOME")
+		}
+
 		err := os.Chdir(path)
 		if err != nil {
 			fmt.Printf("cd: %s: No such file or directory\n", path)
