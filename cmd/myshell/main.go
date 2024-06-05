@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-var builtInCommands = []string{"exit", "echo", "type"}
+var builtInCommands = []string{"exit", "echo", "type", "pwd"}
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
@@ -47,6 +47,14 @@ func handleCommand(cmd string, args []string) {
 		} else {
 			fmt.Printf("%s not found\n", args[0])
 		}
+	case "pwd":
+		dir, err := os.Getwd()
+		if err != nil {
+			fmt.Println("Error getting working dir : ", err)
+			return
+		}
+
+		fmt.Println(dir)
 	default:
 		runCommand(cmd, args)
 	}
