@@ -8,20 +8,19 @@ import (
 	"strings"
 )
 
-var builtInCommands = []string{"exit", "echo", "type", "pwd"}
+var builtInCommands = []string{"exit", "echo", "type", "pwd", "cd"}
 
 func main() {
-	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
-		userInput, err := reader.ReadString('\n')
+
+		userInput, err := bufio.NewReader(os.Stdin).ReadString('\n')
 		if err != nil {
 			fmt.Println("error reading input:", err)
-			continue
+			os.Exit(1)
 		}
 
-		userInput = strings.ReplaceAll(userInput, "\n", "")
-		cmd, args := parseInput(userInput)
+		cmd, args := parseInput(userInput[:len(userInput)-1])
 
 		handleCommand(cmd, args)
 	}
@@ -32,78 +31,18 @@ func handleCommand(cmd string, args []string) {
 	case "exit":
 		os.Exit(0)
 	case "echo":
-		fmt.Println(strings.Join(args, " "))
+		if len(args) > 0 {
+			fmt.Println(strings.Join(args, " "))
+		}
 	case "type":
-		if len(args) == 0 {
-			fmt.Println("type: missing argument")
-			return
-		}
-
-		if listContains(builtInCommands, args[0]) {
-			fmt.Printf("%s is a shell builtin\n", args[0])
-		} else if path, ok := isOnPath(args[0]); ok {
-			fullPath := path + "/" + args[0]
-			fmt.Printf("%s is %s\n", args[0], fullPath)
-		} else {
-			fmt.Printf("%s not found\n", args[0])
-		}
+		handleTypeCmd(args)
 	case "pwd":
-		dir, err := os.Getwd()
-		if err != nil {
-			fmt.Println("Error getting working dir : ", err)
-			return
-		}
-
-		fmt.Println(dir)
+		handlePwdCmd()
 	case "cd":
-		path := args[0]
-
-		if path == "~" {
-			path = os.Getenv("HOME")
-		}
-
-		err := os.Chdir(path)
-		if err != nil {
-			fmt.Printf("cd: %s: No such file or directory\n", path)
-			return
-		}
+		handleCdCmd(args)
 	default:
 		runCommand(cmd, args)
 	}
-}
-
-func parseInput(input string) (string, []string) {
-	fields := strings.Fields(input)
-	cmd := fields[0]
-
-	if len(fields) > 1 {
-		return cmd, fields[1:]
-	} else {
-		return cmd, nil
-	}
-}
-
-func listContains(list []string, elem string) bool {
-	for _, e := range list {
-		if e == elem {
-			return true
-		}
-	}
-
-	return false
-}
-
-func isOnPath(cmd string) (string, bool) {
-	osPath := os.Getenv("PATH")
-	paths := strings.Split(osPath, ":")
-
-	for _, path := range paths {
-		if _, err := os.Stat(path + "/" + cmd); err == nil {
-			return path, true
-		}
-	}
-
-	return "", false
 }
 
 func runCommand(cmd string, args []string) {
