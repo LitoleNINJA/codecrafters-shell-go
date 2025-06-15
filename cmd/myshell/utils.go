@@ -243,7 +243,7 @@ func readUserInput() string {
 				fmt.Printf("%s ", completed)
 				os.Stdout.Sync() // Force flush
 				input.Reset()
-				input.WriteString(completed)
+				input.WriteString(completed + " ")
 			}
 		case 127, 8: // Backspace (127 is DEL, 8 is BS)
 			if input.Len() > 0 {
