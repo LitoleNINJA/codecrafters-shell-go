@@ -54,6 +54,7 @@ func parseInput(input string) ParsedCommand {
 		}
 	}
 
+
 	parsedArgs := []string{}
 	currentArg := strings.Builder{}
 	isInSingleQuotes := false
@@ -137,11 +138,11 @@ func processRedirection(input string, pos int, redirType *RedirectionType, redir
 	}
 
 	if input[pos] == redirOut {
-		// Check for append redirection '>>'
+		// Check for append redirection '>>' or '1>>'
 		if pos+1 < len(input) && input[pos+1] == redirOut {
 			*redirType = AppendRedirection
 			*redirFile = strings.TrimSpace(input[pos+2:])
-			return strings.TrimSpace(input[:pos]), nil
+			return strings.TrimSpace(input[:pos-1]), nil
 		}
 
 		*redirFile = strings.TrimSpace(input[pos+1:])

@@ -45,7 +45,7 @@ func handleCommand(parsedCmd *ParsedCommand) {
 			}
 			if originalStd != nil {
 				switch parsedCmd.RedirType {
-				case OutputRedirection:
+				case OutputRedirection, AppendRedirection:
 					os.Stdout = originalStd
 				case InputRedirection:
 					os.Stdin = originalStd
@@ -103,6 +103,16 @@ func handleRedirection(redirType RedirectionType, redirFile string) (*os.File, *
 
 		originalStd = os.Stderr
 		os.Stderr = outputFile
+	} else if redirType == AppendRedirection {
+		outputFile, err = os.OpenFile(redirFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return nil, nil, fmt.Errorf("could not open file for appending: %w", err)
+		}
+
+		originalStd = os.Stdout
+		os.Stdout = outputFile
+	} else {
+		return nil, nil, fmt.Errorf("unknown redirection type")
 	}
 
 	return outputFile, originalStd, nil
