@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,22 +13,19 @@ func main() {
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
 
-		userInput, err := bufio.NewReader(os.Stdin).ReadString('\n')
-		if err != nil {
-			fmt.Println("error reading input:", err)
-			os.Exit(1)
-		}
+		userInput := readUserInput()
+		// fmt.Printf("Received input: %s\n", userInput)
 
-		parsedCommand := parseInput(userInput[:len(userInput)-1])
+		parsedCommand := parseInput(userInput)
 
 		handleCommand(&parsedCommand)
 	}
 }
 
 func handleCommand(parsedCmd *ParsedCommand) {
-	var outputFile 		*os.File
-	var originalStd 	*os.File
-	var err				error
+	var outputFile *os.File
+	var originalStd *os.File
+	var err error
 
 	if parsedCmd.RedirType != NoRedirection {
 		outputFile, originalStd, err = handleRedirection(parsedCmd.RedirType, parsedCmd.RedirFile)
@@ -116,7 +112,7 @@ func handleRedirection(redirType RedirectionType, redirFile string) (*os.File, *
 		if err != nil {
 			return nil, nil, fmt.Errorf("could not open file for appending: %w", err)
 		}
-		
+
 		originalStd = os.Stderr
 		os.Stderr = outputFile
 	} else {
@@ -130,17 +126,17 @@ func runCommand(cmd string, args []string) {
 	command := exec.Command(cmd, args...)
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr
-	command.Stdin  = os.Stdin
+	command.Stdin = os.Stdin
 
 	err := command.Run()
-    if err != nil {
-        // Check if it's an ExitError (command found but exited with non-zero status)
-        if _, ok := err.(*exec.ExitError); ok {
-            // Command was found and ran, but exited with error
-            // Don't print "command not found" - the command already printed its error
-            return
-        }
-        // This is likely a "command not found" or similar startup error
-        fmt.Fprintf(os.Stderr, "%s: command not found\n", cmd)
-    }
+	if err != nil {
+		// Check if it's an ExitError (command found but exited with non-zero status)
+		if _, ok := err.(*exec.ExitError); ok {
+			// Command was found and ran, but exited with error
+			// Don't print "command not found" - the command already printed its error
+			return
+		}
+		// This is likely a "command not found" or similar startup error
+		fmt.Fprintf(os.Stderr, "%s: command not found\n", cmd)
+	}
 }

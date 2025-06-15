@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 const (
@@ -54,7 +56,6 @@ func parseInput(input string) ParsedCommand {
 			break
 		}
 	}
-
 
 	parsedArgs := []string{}
 	currentArg := strings.Builder{}
@@ -201,4 +202,103 @@ func isOnPath(command string) (foundPath string, exists bool) {
 func commandExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func readUserInput() string {
+	var input strings.Builder
+
+	// Get the file descriptor for stdin
+	fd := int(os.Stdin.Fd())
+
+	// Save the original terminal state
+	oldState, err := term.MakeRaw(fd)
+	if err != nil {
+		fmt.Printf("Error setting raw mode: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Restore terminal state
+	defer term.Restore(fd, oldState)
+
+	for {
+		// Read one byte at a time
+		var buf [1]byte
+		n, err := os.Stdin.Read(buf[:])
+		if err != nil || n == 0 {
+			continue
+		}
+
+		char := rune(buf[0])
+
+		switch char {
+		case '\n', '\r':
+			fmt.Print("\n\r")
+			return input.String()
+		case '\t': // Tab : autocomplete
+			currentInput := input.String()
+			completed := tryAutoComplete(currentInput)
+			if completed != currentInput {
+				// Clear current line and rewrite with completed text
+				fmt.Print("\r\033[K$ ")
+				fmt.Printf("%s ", completed)
+				os.Stdout.Sync() // Force flush
+				input.Reset()
+				input.WriteString(completed)
+			}
+		case 127, 8: // Backspace (127 is DEL, 8 is BS)
+			if input.Len() > 0 {
+				// Remove last character from input
+				currentStr := input.String()
+				input.Reset()
+				input.WriteString(currentStr[:len(currentStr)-1])
+				// Move cursor back, print space, move back again
+				fmt.Print("\b \b")
+			}
+		case 3: // Ctrl+C
+			fmt.Print("\n\r")
+			term.Restore(fd, oldState) // Restore before exit
+			os.Exit(0)
+
+		case 4: // Ctrl+D (EOF)
+			fmt.Print("\n\r")
+			term.Restore(fd, oldState) // Restore before exit
+			os.Exit(0)
+
+		default:
+			if char >= 32 && char < 127 {
+				input.WriteRune(char)
+				fmt.Print(string(char))
+			}
+		}
+	}
+}
+
+func tryAutoComplete(input string) string {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return ""
+	}
+
+	var matches []string
+
+	// check if it is a built-in command
+	for _, cmd := range builtInCommands {
+		if strings.HasPrefix(cmd, input) {
+			matches = append(matches, cmd)
+		}
+	}
+
+	if len(matches) == 1 {
+		return matches[0]
+	} else if len(matches) > 1 {
+		// Multiple matches - show them
+		fmt.Printf("\n")
+		for _, match := range matches {
+			fmt.Printf("%s  ", match)
+		}
+		fmt.Printf("\n$ %s", input)
+		return input
+	}
+
+	return input
 }
