@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strings"
 )
@@ -33,6 +34,14 @@ func parseInput(input string) (string, []string) {
 
             for i+1 < len(input) && input[i+1] == ' ' {
                 i++
+            }
+        } else if !inQuotes && char == '\\' {
+            if i+1 < len(input) {
+                i++
+                current.WriteByte(input[i])
+            } else {
+                fmt.Println("error: trailing backslash in input")
+                return "", nil
             }
         } else {
             current.WriteByte(char)
