@@ -24,7 +24,8 @@ const (
 	OutputRedirection
 	InputRedirection
 	ErrorRedirection
-	AppendRedirection
+	AppendOutRedirection
+	AppendErrRedirection
 )
 
 type ParsedCommand struct {
@@ -138,9 +139,14 @@ func processRedirection(input string, pos int, redirType *RedirectionType, redir
 	}
 
 	if input[pos] == redirOut {
-		// Check for append redirection '>>' or '1>>'
+		// Check for append redirection '>>' or '1>>' or '2>>'
 		if pos+1 < len(input) && input[pos+1] == redirOut {
-			*redirType = AppendRedirection
+			if pos > 0 && input[pos-1] == '2' {
+				*redirType = AppendErrRedirection
+			} else {
+				*redirType = AppendOutRedirection
+			}
+
 			*redirFile = strings.TrimSpace(input[pos+2:])
 			return strings.TrimSpace(input[:pos-1]), nil
 		}
