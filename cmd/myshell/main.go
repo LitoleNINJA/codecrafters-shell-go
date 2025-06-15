@@ -28,22 +28,30 @@ func main() {
 
 func handleCommand(parsedCmd *ParsedCommand) {
 	var outputFile 		*os.File
-	var originalStdout 	*os.File
+	var originalStd 	*os.File
 	var err				error
 
 	if parsedCmd.RedirType != NoRedirection {
-		outputFile, originalStdout, err = handleRedirection(parsedCmd.RedirType, parsedCmd.RedirFile)
+		outputFile, originalStd, err = handleRedirection(parsedCmd.RedirType, parsedCmd.RedirFile)
 		if err != nil {
 			fmt.Println("Error handling redirection:", err)
 			return
 		}
 
+		// Ensure we close the file and restore original std streams
 		defer func() {
 			if outputFile != nil {
 				outputFile.Close()
 			}
-			if originalStdout != nil {
-				os.Stdout = originalStdout
+			if originalStd != nil {
+				switch parsedCmd.RedirType {
+				case OutputRedirection:
+					os.Stdout = originalStd
+				case InputRedirection:
+					os.Stdin = originalStd
+				case ErrorRedirection:
+					os.Stderr = originalStd
+				}
 			}
 		}()
 	}
@@ -68,7 +76,7 @@ func handleCommand(parsedCmd *ParsedCommand) {
 
 func handleRedirection(redirType RedirectionType, redirFile string) (*os.File, *os.File, error) {
 	var outputFile *os.File
-	var originalStdout *os.File
+	var originalStd *os.File
 	var err error
 
 	if redirType == OutputRedirection {
@@ -76,17 +84,28 @@ func handleRedirection(redirType RedirectionType, redirFile string) (*os.File, *
 		if err != nil {
 			return nil, nil, fmt.Errorf("could not create output file: %w", err)
 		}
-		originalStdout = os.Stdout
+
+		originalStd = os.Stdout
 		os.Stdout = outputFile
 	} else if redirType == InputRedirection {
 		inputFile, err := os.Open(redirFile)
 		if err != nil {
 			return nil, nil, fmt.Errorf("could not open input file: %w", err)
 		}
+
+		originalStd = os.Stdin
 		os.Stdin = inputFile
+	} else if redirType == ErrorRedirection {
+		outputFile, err = os.OpenFile(redirFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+		if err != nil {
+			return nil, nil, fmt.Errorf("could not create error file: %w", err)
+		}
+
+		originalStd = os.Stderr
+		os.Stderr = outputFile
 	}
 
-	return outputFile, originalStdout, nil
+	return outputFile, originalStd, nil
 }
 
 func runCommand(cmd string, args []string) {

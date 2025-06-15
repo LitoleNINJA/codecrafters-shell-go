@@ -23,6 +23,7 @@ const (
 	NoRedirection RedirectionType = iota
 	OutputRedirection
 	InputRedirection
+	ErrorRedirection
 	AppendRedirection
 )
 
@@ -49,7 +50,7 @@ func parseInput(input string) ParsedCommand {
 				return ParsedCommand{}
 			}
 			input = leftInput
-            break
+			break
 		}
 	}
 
@@ -136,29 +137,34 @@ func processRedirection(input string, pos int, redirType *RedirectionType, redir
 	}
 
 	if input[pos] == redirOut {
-        // Check for append redirection '>>'
-        if pos+1 < len(input) && input[pos+1] == redirOut {
-            *redirType = AppendRedirection
-            *redirFile = strings.TrimSpace(input[pos+2:])
-            return strings.TrimSpace(input[:pos]), nil
-        }
+		// Check for append redirection '>>'
+		if pos+1 < len(input) && input[pos+1] == redirOut {
+			*redirType = AppendRedirection
+			*redirFile = strings.TrimSpace(input[pos+2:])
+			return strings.TrimSpace(input[:pos]), nil
+		}
 
-        *redirType = OutputRedirection
-        *redirFile = strings.TrimSpace(input[pos+1:])
-        
-        // Handle explicit stdout redirection '1>'
-        if pos > 0 && input[pos-1] == '1' {
-            return strings.TrimSpace(input[:pos-1]), nil
-        }
-        
-        // Handle regular stdout redirection '>'
-        return strings.TrimSpace(input[:pos]), nil
-        
-    } else if input[pos] == redirIn {
-        *redirType = InputRedirection
-        *redirFile = strings.TrimSpace(input[pos+1:])
-        return strings.TrimSpace(input[:pos]), nil
-    }
+		*redirFile = strings.TrimSpace(input[pos+1:])
+
+		// Handle stdout redirection '1>'
+		if pos > 0 && input[pos-1] == '1' {
+			*redirType = OutputRedirection
+			return strings.TrimSpace(input[:pos-1]), nil
+		} else if pos > 0 && input[pos-1] == '2' {
+			// Handle stderr redirection '2>'
+			*redirType = ErrorRedirection
+			return strings.TrimSpace(input[:pos-1]), nil
+		}
+
+		// Handle regular stdout redirection '>'
+		*redirType = OutputRedirection
+		return strings.TrimSpace(input[:pos]), nil
+
+	} else if input[pos] == redirIn {
+		*redirType = InputRedirection
+		*redirFile = strings.TrimSpace(input[pos+1:])
+		return strings.TrimSpace(input[:pos]), nil
+	}
 
 	return input, nil
 }
