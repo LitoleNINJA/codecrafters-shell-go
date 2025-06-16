@@ -291,6 +291,21 @@ func tryAutoComplete(input string) string {
 		}
 	}
 
+	// check if it an executable in PATH directory
+	if len(matches) == 0 {
+		executables, err := checkPATH()
+		if err != nil {
+			fmt.Printf("Error checking PATH: %v\n", err)
+			return input
+		}
+	
+		for _, exec := range executables {
+			if strings.HasPrefix(exec, input) {
+				matches = append(matches, exec)
+			}
+		}
+	}
+
 	if len(matches) == 1 {
 		return matches[0]
 	} else if len(matches) > 1 {
@@ -304,4 +319,45 @@ func tryAutoComplete(input string) string {
 	}
 
 	return input
+}
+
+func checkPATH() ([]string, error) {
+	var executables []string
+
+	pathEnv := os.Getenv("PATH")
+	if pathEnv == "" {
+		return nil, fmt.Errorf("PATH environment variable is not set")
+	}
+
+	pathDirs := strings.Split(pathEnv, pathSeparator)
+	for _, dir := range pathDirs {
+		// read directory
+		files, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+
+		for _, file := range files {
+			if !file.IsDir() {
+				fileName := file.Name()
+
+				if isExecutable(filepath.Join(dir, fileName)) {
+					executables = append(executables, fileName)
+				}
+			}
+		}
+	}
+
+	return executables, nil
+}
+
+func isExecutable(filePath string) bool {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return false
+	}
+
+	// Check if file has execute permission
+	mode := info.Mode()
+	return mode&0111 != 0 // Check if any execute bit is set
 }
