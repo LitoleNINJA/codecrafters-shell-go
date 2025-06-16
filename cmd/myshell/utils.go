@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"golang.org/x/term"
@@ -220,6 +221,8 @@ func readUserInput() string {
 	// Restore terminal state
 	defer term.Restore(fd, oldState)
 
+	tabCount := 0
+
 	for {
 		// Read one byte at a time
 		var buf [1]byte
@@ -231,12 +234,13 @@ func readUserInput() string {
 		char := rune(buf[0])
 
 		switch char {
-		case '\n', '\r':
+		case '\n', '\r': //  Enter key
 			fmt.Print("\n\r")
 			return input.String()
 		case '\t': // Tab : autocomplete
+			tabCount += 1
 			currentInput := input.String()
-			completed := tryAutoComplete(currentInput)
+			completed, multipleMatchesFound := tryAutoComplete(currentInput, tabCount)
 			if completed != currentInput {
 				// Clear current line and rewrite with completed text
 				fmt.Print("\r\033[K$ ")
@@ -244,9 +248,12 @@ func readUserInput() string {
 				os.Stdout.Sync() // Force flush
 				input.Reset()
 				input.WriteString(completed + " ")
-			} else {
+			} else if !multipleMatchesFound {
 				// if no completion, print bell sound
 				fmt.Print("\x07") // ASCII Bell
+			} else {
+				// if multiple completions
+				fmt.Printf("$ %s", currentInput)
 			}
 		case 127, 8: // Backspace (127 is DEL, 8 is BS)
 			if input.Len() > 0 {
@@ -276,10 +283,10 @@ func readUserInput() string {
 	}
 }
 
-func tryAutoComplete(input string) string {
+func tryAutoComplete(input string, tabCount int) (string, bool) {
 	input = strings.TrimSpace(input)
 	if input == "" {
-		return ""
+		return "", false
 	}
 
 	var matches []string
@@ -296,9 +303,9 @@ func tryAutoComplete(input string) string {
 		executables, err := checkPATH()
 		if err != nil {
 			fmt.Printf("Error checking PATH: %v\n", err)
-			return input
+			return input, false
 		}
-	
+
 		for _, exec := range executables {
 			if strings.HasPrefix(exec, input) {
 				matches = append(matches, exec)
@@ -307,18 +314,21 @@ func tryAutoComplete(input string) string {
 	}
 
 	if len(matches) == 1 {
-		return matches[0]
+		return matches[0], false
 	} else if len(matches) > 1 {
-		// Multiple matches - show them
-		fmt.Printf("\n")
-		for _, match := range matches {
-			fmt.Printf("%s  ", match)
+		// Multiple matches - Ring bell for 1st tab, print all for 2nd tab
+		if tabCount == 1 {
+			fmt.Print("\a") // ASCII Bell
+		} else if tabCount > 1 {
+			slices.Sort(matches)
+			fmt.Printf("\n\r")
+			fmt.Printf("%s", strings.Join(matches, "  "))
+			fmt.Printf("\n\r")
+			return input, true
 		}
-		fmt.Printf("\n$ %s", input)
-		return input
 	}
 
-	return input
+	return input, false
 }
 
 func checkPATH() ([]string, error) {
