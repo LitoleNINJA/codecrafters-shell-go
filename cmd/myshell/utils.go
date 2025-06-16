@@ -244,6 +244,9 @@ func readUserInput() string {
 				os.Stdout.Sync() // Force flush
 				input.Reset()
 				input.WriteString(completed + " ")
+			} else {
+				// if no completion, print bell sound
+				fmt.Print("\x07") // ASCII Bell
 			}
 		case 127, 8: // Backspace (127 is DEL, 8 is BS)
 			if input.Len() > 0 {
