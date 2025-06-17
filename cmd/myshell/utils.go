@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"golang.org/x/term"
@@ -221,8 +220,6 @@ func readUserInput() string {
 	// Restore terminal state
 	defer term.Restore(fd, oldState)
 
-	tabCount := 0
-
 	for {
 		// Read one byte at a time
 		var buf [1]byte
@@ -238,23 +235,7 @@ func readUserInput() string {
 			fmt.Print("\n\r")
 			return input.String()
 		case '\t': // Tab : autocomplete
-			tabCount += 1
-			currentInput := input.String()
-			completed, multipleMatchesFound := tryAutoComplete(currentInput, tabCount)
-			if completed != currentInput {
-				// Clear current line and rewrite with completed text
-				fmt.Print("\r\033[K$ ")
-				fmt.Printf("%s ", completed)
-				os.Stdout.Sync() // Force flush
-				input.Reset()
-				input.WriteString(completed + " ")
-			} else if !multipleMatchesFound {
-				// if no completion, print bell sound
-				fmt.Print("\x07") // ASCII Bell
-			} else {
-				// if multiple completions
-				fmt.Printf("$ %s", currentInput)
-			}
+			autoComplete(&input)
 		case 127, 8: // Backspace (127 is DEL, 8 is BS)
 			if input.Len() > 0 {
 				// Remove last character from input
@@ -281,93 +262,4 @@ func readUserInput() string {
 			}
 		}
 	}
-}
-
-func tryAutoComplete(input string, tabCount int) (string, bool) {
-	input = strings.TrimSpace(input)
-	if input == "" {
-		return "", false
-	}
-
-	var matches []string
-
-	// check if it is a built-in command
-	for _, cmd := range builtInCommands {
-		if strings.HasPrefix(cmd, input) {
-			matches = append(matches, cmd)
-		}
-	}
-
-	// check if it an executable in PATH directory
-	if len(matches) == 0 {
-		executables, err := checkPATH()
-		if err != nil {
-			fmt.Printf("Error checking PATH: %v\n", err)
-			return input, false
-		}
-
-		for _, exec := range executables {
-			if strings.HasPrefix(exec, input) {
-				matches = append(matches, exec)
-			}
-		}
-	}
-
-	if len(matches) == 1 {
-		return matches[0], false
-	} else if len(matches) > 1 {
-		// Multiple matches - Ring bell for 1st tab, print all for 2nd tab
-		if tabCount == 1 {
-			fmt.Print("\a") // ASCII Bell
-		} else if tabCount > 1 {
-			slices.Sort(matches)
-			fmt.Printf("\n\r")
-			fmt.Printf("%s", strings.Join(matches, "  "))
-			fmt.Printf("\n\r")
-			return input, true
-		}
-	}
-
-	return input, false
-}
-
-func checkPATH() ([]string, error) {
-	var executables []string
-
-	pathEnv := os.Getenv("PATH")
-	if pathEnv == "" {
-		return nil, fmt.Errorf("PATH environment variable is not set")
-	}
-
-	pathDirs := strings.Split(pathEnv, pathSeparator)
-	for _, dir := range pathDirs {
-		// read directory
-		files, err := os.ReadDir(dir)
-		if err != nil {
-			continue
-		}
-
-		for _, file := range files {
-			if !file.IsDir() {
-				fileName := file.Name()
-
-				if isExecutable(filepath.Join(dir, fileName)) {
-					executables = append(executables, fileName)
-				}
-			}
-		}
-	}
-
-	return executables, nil
-}
-
-func isExecutable(filePath string) bool {
-	info, err := os.Stat(filePath)
-	if err != nil {
-		return false
-	}
-
-	// Check if file has execute permission
-	mode := info.Mode()
-	return mode&0111 != 0 // Check if any execute bit is set
 }
