@@ -17,6 +17,7 @@ func main() {
 
 		parsedCommand := parseInput(userInput)
 
+		addCmdToHistory(parsedCommand)
 		handleCommand(&parsedCommand)
 	}
 }
@@ -65,7 +66,7 @@ func handleCommand(parsedCmd *ParsedCommand) {
 	case "cd":
 		handleCdCmd(parsedCmd.Args)
 	case "history":
-		fmt.Println("History command is not implemented yet.")
+		displayCmdHistory()
 	default:
 		runCommand(parsedCmd.Cmd, parsedCmd.Args)
 	}
