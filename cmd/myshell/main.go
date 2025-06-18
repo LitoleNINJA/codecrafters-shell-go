@@ -66,7 +66,7 @@ func handleCommand(parsedCmd *ParsedCommand) {
 	case "cd":
 		handleCdCmd(parsedCmd.Args)
 	case "history":
-		displayCmdHistory()
+		displayCmdHistory(parsedCmd.Args)
 	default:
 		runCommand(parsedCmd.Cmd, parsedCmd.Args)
 	}
