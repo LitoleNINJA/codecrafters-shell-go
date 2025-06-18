@@ -7,14 +7,13 @@ import (
 	"strings"
 )
 
-var builtInCommands = []string{"exit", "echo", "type", "pwd", "cd"}
+var builtInCommands = []string{"exit", "echo", "type", "pwd", "cd", "history"}
 
 func main() {
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
 
 		userInput := readUserInput()
-		// fmt.Printf("Received input: %s\n", userInput)
 
 		parsedCommand := parseInput(userInput)
 
@@ -65,6 +64,8 @@ func handleCommand(parsedCmd *ParsedCommand) {
 		handlePwdCmd()
 	case "cd":
 		handleCdCmd(parsedCmd.Args)
+	case "history":
+		fmt.Println("History command is not implemented yet.")
 	default:
 		runCommand(parsedCmd.Cmd, parsedCmd.Args)
 	}
