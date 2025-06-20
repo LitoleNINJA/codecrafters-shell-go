@@ -8,12 +8,15 @@ import (
 var HISTORY []ParsedCommand
 
 const MAX_HISTORY = 100
+var lastCommandPos int = -1
 
 func addCmdToHistory(cmd ParsedCommand) {
 	if len(HISTORY) >= MAX_HISTORY {
 		HISTORY = HISTORY[1:] // Remove the oldest command
 	}
 	HISTORY = append(HISTORY, cmd)
+
+	lastCommandPos = len(HISTORY) - 1
 }
 
 func displayCmdHistory(args []string) {
@@ -32,4 +35,15 @@ func displayCmdHistory(args []string) {
 		}
 		fmt.Println()
 	}
+}
+
+func getPreviousCommand() ParsedCommand {
+	if lastCommandPos < 0 || lastCommandPos >= len(HISTORY) {
+		return ParsedCommand{}
+	}
+
+	lastCmd := HISTORY[lastCommandPos]
+	lastCommandPos--
+
+	return lastCmd
 }

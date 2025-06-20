@@ -234,8 +234,10 @@ func readUserInput() string {
 		case '\n', '\r': //  Enter key
 			fmt.Print("\n\r")
 			return input.String()
+
 		case '\t': // Tab : autocomplete
 			autoComplete(&input)
+
 		case 127, 8: // Backspace (127 is DEL, 8 is BS)
 			if input.Len() > 0 {
 				// Remove last character from input
@@ -245,6 +247,7 @@ func readUserInput() string {
 				// Move cursor back, print space, move back again
 				fmt.Print("\b \b")
 			}
+
 		case 3: // Ctrl+C
 			fmt.Print("\n\r")
 			term.Restore(fd, oldState) // Restore before exit
@@ -254,6 +257,38 @@ func readUserInput() string {
 			fmt.Print("\n\r")
 			term.Restore(fd, oldState) // Restore before exit
 			os.Exit(0)
+
+		case 27: // Escape sequence
+			// Read the next two bytes for arrow keys or other escape sequences
+			var buf2 [2]byte
+			n, err := os.Stdin.Read(buf2[:])
+			if err != nil || n < 2 {
+				continue
+			}
+
+			// Check for arrow keys
+			if buf2[0] == '[' {
+				switch buf2[1] {
+				case 'A': // Up arrow - get the previos cmd
+					previousCmd := getPreviousCommand()
+
+					if previousCmd.Cmd == "" {
+						continue
+					}
+
+					// clear the input and terminal
+					fmt.Print("\r\033[K")
+					input.Reset()
+
+					fmt.Printf("$ %s", previousCmd.Cmd)
+					input.WriteString(previousCmd.Cmd)
+
+					for _, arg := range previousCmd.Args {
+						fmt.Printf(" %s", arg)
+						input.WriteString(" " + arg)
+					}
+				}
+			}
 
 		default:
 			if char >= 32 && char < 127 {
