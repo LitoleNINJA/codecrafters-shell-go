@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 )
 
 func handleTypeCmd(args []string) {
@@ -43,5 +44,19 @@ func handleCdCmd(args []string) {
 	if err != nil {
 		fmt.Printf("cd: %s: No such file or directory\n", path)
 		return
+	}
+}
+
+func displayCmd(cmd ParsedCommand, input *strings.Builder) {
+	// clear the input and terminal
+	fmt.Print("\r\033[K")
+	input.Reset()
+
+	fmt.Printf("$ %s", cmd.Cmd)
+	input.WriteString(cmd.Cmd)
+
+	for _, arg := range cmd.Args {
+		fmt.Printf(" %s", arg)
+		input.WriteString(" " + arg)
 	}
 }

@@ -16,7 +16,7 @@ func addCmdToHistory(cmd ParsedCommand) {
 	}
 	HISTORY = append(HISTORY, cmd)
 
-	lastCommandPos = len(HISTORY) - 1
+	lastCommandPos = len(HISTORY)
 }
 
 func displayCmdHistory(args []string) {
@@ -38,12 +38,19 @@ func displayCmdHistory(args []string) {
 }
 
 func getPreviousCommand() ParsedCommand {
-	if lastCommandPos < 0 || lastCommandPos >= len(HISTORY) {
+	if lastCommandPos <= 0 || lastCommandPos > len(HISTORY) {
 		return ParsedCommand{}
 	}
-
-	lastCmd := HISTORY[lastCommandPos]
+	
 	lastCommandPos--
+	return HISTORY[lastCommandPos]
+}
 
-	return lastCmd
+func getNextCommand() ParsedCommand {
+	if lastCommandPos >= len(HISTORY)-1 {
+		return ParsedCommand{}
+	}
+	
+	lastCommandPos++
+	return HISTORY[lastCommandPos]
 }

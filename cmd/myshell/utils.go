@@ -276,17 +276,19 @@ func readUserInput() string {
 						continue
 					}
 
-					// clear the input and terminal
-					fmt.Print("\r\033[K")
-					input.Reset()
+					displayCmd(previousCmd, &input)
 
-					fmt.Printf("$ %s", previousCmd.Cmd)
-					input.WriteString(previousCmd.Cmd)
+				case 'B': // Down arrow - get the next cmd
+					nextCmd := getNextCommand()
 
-					for _, arg := range previousCmd.Args {
-						fmt.Printf(" %s", arg)
-						input.WriteString(" " + arg)
+					if nextCmd.Cmd == "" {
+						continue
 					}
+
+					displayCmd(nextCmd, &input)
+
+				default: // Ignore other escape sequences
+					continue
 				}
 			}
 
