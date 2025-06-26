@@ -23,6 +23,11 @@ func main() {
 }
 
 func handleCommand(parsedCmd *ParsedCommand) {
+	if parsedCmd.PipedCmd != nil {
+		handlePipeCmd(parsedCmd)
+		return
+	}
+
 	var outputFile *os.File
 	var originalStd *os.File
 	var err error

@@ -17,6 +17,7 @@ const (
 	redirOut      = '>'
 	redirIn       = '<'
 	pathSeparator = string(os.PathListSeparator)
+	pipeline	  = '|'
 )
 
 type RedirectionType int
@@ -30,18 +31,20 @@ const (
 	AppendErrRedirection
 )
 
-type ParsedCommand struct {
-	Cmd       string
-	Args      []string
-	RedirType RedirectionType
-	RedirFile string
-}
-
 func parseInput(input string) ParsedCommand {
 	input = strings.TrimSpace(input)
 	if input == "" {
 		return ParsedCommand{}
 	}
+
+	pipeIndex := checkIfPipeStatement(input)
+    if pipeIndex != -1 {
+        leftCmd := parseInput(strings.TrimSpace(input[:pipeIndex]))
+        rightCmd := parseInput(strings.TrimSpace(input[pipeIndex+1:]))
+        
+        leftCmd.PipedCmd = &rightCmd
+        return leftCmd
+    }
 
 	redirType := NoRedirection
 	redirFile := ""
@@ -54,7 +57,7 @@ func parseInput(input string) ParsedCommand {
 			}
 			input = leftInput
 			break
-		}
+		} 
 	}
 
 	parsedArgs := []string{}
@@ -105,6 +108,7 @@ func parseInput(input string) ParsedCommand {
 		Args:      parsedArgs[1:],
 		RedirType: redirType,
 		RedirFile: redirFile,
+		PipedCmd:  nil,
 	}
 }
 
@@ -202,6 +206,30 @@ func isOnPath(command string) (foundPath string, exists bool) {
 func commandExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func checkIfPipeStatement(input string) int {
+	isInSingleQuotes := false
+    isInDoubleQuotes := false
+    
+    for i, char := range input {
+        switch char {
+        case singleQuote:
+            if !isInDoubleQuotes {
+                isInSingleQuotes = !isInSingleQuotes
+            }
+        case doubleQuote:
+            if !isInSingleQuotes {
+                isInDoubleQuotes = !isInDoubleQuotes
+            }
+        case pipeline:
+            if !isInSingleQuotes && !isInDoubleQuotes {
+                return i
+            }
+        }
+    }
+	
+    return -1
 }
 
 func readUserInput() string {

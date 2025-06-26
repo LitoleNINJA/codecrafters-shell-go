@@ -3,9 +3,18 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"slices"
 	"strings"
 )
+
+type ParsedCommand struct {
+	Cmd       string
+	Args      []string
+	RedirType RedirectionType
+	RedirFile string
+	PipedCmd  *ParsedCommand
+}
 
 func handleTypeCmd(args []string) {
 	if len(args) == 0 {
@@ -59,4 +68,61 @@ func displayCmd(cmd ParsedCommand, input *strings.Builder) {
 		fmt.Printf(" %s", arg)
 		input.WriteString(" " + arg)
 	}
+}
+
+func handlePipeCmd(cmd *ParsedCommand) {
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		fmt.Println("Error creating pipe:", err)
+		return
+	}
+
+	// Execute left CMD
+	if slices.Contains(builtInCommands, cmd.Cmd) {
+		// For builtin commands, redirect stdout
+		originalStdout := os.Stdout
+		os.Stdout = writer
+
+		executeBuiltinCommand(cmd)
+
+		os.Stdout = originalStdout
+		writer.Close()
+	} else {
+		// For external commands, use exec with pipe
+		leftCmd := exec.Command(cmd.Cmd, cmd.Args...)
+		leftCmd.Stdout = writer
+		leftCmd.Stderr = os.Stderr
+		leftCmd.Stdin = os.Stdin
+
+		go func() {
+			defer writer.Close()
+			leftCmd.Run()
+		}()
+	}
+
+	// Execute right CMD with input from left side
+	originalStdin := os.Stdin
+	os.Stdin = reader
+
+	handleCommand(cmd.PipedCmd) // Recursive for multiple pipes
+
+	os.Stdin = originalStdin
+	reader.Close()
+}
+
+func executeBuiltinCommand(cmd *ParsedCommand) {
+	switch cmd.Cmd {
+    case "echo":
+        if len(cmd.Args) > 0 {
+            fmt.Println(strings.Join(cmd.Args, " "))
+        }
+    case "type":
+        handleTypeCmd(cmd.Args)
+    case "pwd":
+        handlePwdCmd()
+    case "cd":
+        handleCdCmd(cmd.Args)
+    case "history":
+        displayCmdHistory(cmd.Args)
+    }
 }
