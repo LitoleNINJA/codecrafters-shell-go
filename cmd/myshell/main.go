@@ -10,6 +10,8 @@ import (
 var builtInCommands = []string{"exit", "echo", "type", "pwd", "cd", "history"}
 
 func main() {
+	loadHistory()
+
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
 

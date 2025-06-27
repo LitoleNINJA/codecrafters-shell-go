@@ -124,3 +124,12 @@ func writeHistoryToFile(fileName string, append bool) {
 	// clear HISTORY
 	HISTORY = []ParsedCommand{}
 }
+
+func loadHistory() {
+	fileName := os.Getenv("HISTFILE")
+	if fileName == "" {
+		return
+	}
+
+	addContentsToHistory(fileName)
+}
