@@ -92,17 +92,19 @@ func addContentsToHistory(fileName string) {
 	}
 }
 
-func writeHistoryToFile(fileName string) {
+func writeHistoryToFile(fileName string, append bool) {
 	if fileName == "" {
 		fmt.Println("No history file set")
 		return
 	}
 
-	historyFile, err := os.Create(fileName)
-	if err != nil {
-		fmt.Printf("Error creating history file: %s\n", err)
-		return
+	var historyFile *os.File
+	if append {
+		historyFile, _ = os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	} else {
+		historyFile, _ = os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	}
+
 	defer historyFile.Close()
 
 	for _, cmd := range HISTORY {
@@ -118,4 +120,7 @@ func writeHistoryToFile(fileName string) {
 			return
 		}
 	}
+
+	// clear HISTORY
+	HISTORY = []ParsedCommand{}
 }

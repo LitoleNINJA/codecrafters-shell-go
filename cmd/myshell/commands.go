@@ -130,19 +130,26 @@ func executeBuiltinCommand(cmd *ParsedCommand) {
 func handleHistoryCmd(args []string) {
 	if len(args) > 0 {
 		switch args[0] {
-		case "-r":
+		case "-r": // read from history file into HISTORY
 			if len(args) < 2 {
 				fmt.Println("history: missing filename")
 				return
 			}
 			addContentsToHistory(args[1])
 
-		case "-w":
+		case "-w": // write current HISTORY to file
 			if len(args) < 2 {
 				fmt.Println("history: missing filename")
 				return
 			}
-			writeHistoryToFile(args[1])
+			writeHistoryToFile(args[1], false)
+
+		case "-a": // append current HISTORY to file
+			if len(args) < 2 {
+				fmt.Println("history: missing filename")
+				return
+			}
+			writeHistoryToFile(args[1], true)
 
 		default:
 			displayCmdHistory(args)
