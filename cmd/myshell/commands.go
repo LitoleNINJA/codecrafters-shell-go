@@ -112,17 +112,44 @@ func handlePipeCmd(cmd *ParsedCommand) {
 
 func executeBuiltinCommand(cmd *ParsedCommand) {
 	switch cmd.Cmd {
-    case "echo":
-        if len(cmd.Args) > 0 {
-            fmt.Println(strings.Join(cmd.Args, " "))
-        }
-    case "type":
-        handleTypeCmd(cmd.Args)
-    case "pwd":
-        handlePwdCmd()
-    case "cd":
-        handleCdCmd(cmd.Args)
-    case "history":
-        displayCmdHistory(cmd.Args)
-    }
+	case "echo":
+		if len(cmd.Args) > 0 {
+			fmt.Println(strings.Join(cmd.Args, " "))
+		}
+	case "type":
+		handleTypeCmd(cmd.Args)
+	case "pwd":
+		handlePwdCmd()
+	case "cd":
+		handleCdCmd(cmd.Args)
+	case "history":
+		displayCmdHistory(cmd.Args)
+	}
+}
+
+func handleHistoryCmd(args []string) {
+	if len(args) > 0 {
+		switch args[0] {
+		case "-r":
+			if len(args) < 2 {
+				fmt.Println("history: missing filename")
+				return
+			}
+			addContentsToHistory(args[1])
+
+		case "-w":
+			if len(args) < 2 {
+				fmt.Println("history: missing filename")
+				return
+			}
+			writeHistoryToFile(args[1])
+
+		default:
+			displayCmdHistory(args)
+		}
+
+		return
+	}
+
+	displayCmdHistory(args)
 }

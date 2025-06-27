@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"slices"
 	"strings"
 )
 
@@ -72,11 +71,7 @@ func handleCommand(parsedCmd *ParsedCommand) {
 	case "cd":
 		handleCdCmd(parsedCmd.Args)
 	case "history":
-		if pos := slices.Index(parsedCmd.Args, "-r"); pos != -1 {
-			setHistoryFile(parsedCmd.Args[pos+1])
-			return
-		} 
-		displayCmdHistory(parsedCmd.Args)
+		handleHistoryCmd(parsedCmd.Args)
 	default:
 		runCommand(parsedCmd.Cmd, parsedCmd.Args)
 	}

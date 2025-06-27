@@ -23,16 +23,6 @@ func addCmdToHistory(cmd ParsedCommand) {
 	lastCommandPos = len(HISTORY)
 }
 
-func setHistoryFile(fileName string) {
-	historyFile, err := os.Open(fileName)
-	if err != nil {
-		fmt.Printf("Error opening history file: %s\n", err)
-		return
-	}
-
-	addContentsToHistory(historyFile)
-}
-
 func displayCmdHistory(args []string) {
 	limit := len(HISTORY)
 	if len(args) > 0 {
@@ -68,7 +58,12 @@ func getNextCommand() ParsedCommand {
 	return HISTORY[lastCommandPos]
 }
 
-func addContentsToHistory(historyFile *os.File) {
+func addContentsToHistory(fileName string) {
+	historyFile, err := os.Open(fileName)
+	if err != nil {
+		fmt.Printf("Error opening history file: %s\n", err)
+		return
+	}
 	defer historyFile.Close()
 
 	scanner := bufio.NewScanner(historyFile)
@@ -94,5 +89,33 @@ func addContentsToHistory(historyFile *os.File) {
 
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("Error reading history file: %v\n", err)
+	}
+}
+
+func writeHistoryToFile(fileName string) {
+	if fileName == "" {
+		fmt.Println("No history file set")
+		return
+	}
+
+	historyFile, err := os.Create(fileName)
+	if err != nil {
+		fmt.Printf("Error creating history file: %s\n", err)
+		return
+	}
+	defer historyFile.Close()
+
+	for _, cmd := range HISTORY {
+		line := cmd.Cmd
+		if len(cmd.Args) > 0 {
+			line += " " + strings.Join(cmd.Args, " ")
+		}
+
+		_, err := historyFile.WriteString(line + "\n")
+		if err != nil {
+			fmt.Printf("Error writing to history file: %s\n", err)
+			historyFile.Close()
+			return
+		}
 	}
 }
