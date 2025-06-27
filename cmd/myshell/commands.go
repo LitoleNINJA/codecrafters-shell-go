@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -159,4 +160,18 @@ func handleHistoryCmd(args []string) {
 	}
 
 	displayCmdHistory(args)
+}
+
+func handleExitCmd(args []string) {
+	saveHistoryOnExit()
+
+	// Handle exit code
+	exitCode := 0
+	if len(args) > 0 {
+		if code, err := strconv.Atoi(args[0]); err == nil {
+			exitCode = code
+		}
+	}
+
+	os.Exit(exitCode)
 }

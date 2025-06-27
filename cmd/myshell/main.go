@@ -61,7 +61,7 @@ func handleCommand(parsedCmd *ParsedCommand) {
 
 	switch parsedCmd.Cmd {
 	case "exit":
-		os.Exit(0)
+		handleExitCmd(parsedCmd.Args)
 	case "echo":
 		if len(parsedCmd.Args) > 0 {
 			fmt.Println(strings.Join(parsedCmd.Args, " "))

@@ -133,3 +133,12 @@ func loadHistory() {
 
 	addContentsToHistory(fileName)
 }
+
+func saveHistoryOnExit() {
+	fileName := os.Getenv("HISTFILE")
+	if fileName == "" {
+		return
+	}
+
+	writeHistoryToFile(fileName, false)
+}
